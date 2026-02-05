@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "sourceMap": true,
+    "lib": ["ES2022"],
+    "types": ["node"],
+    // Remove these lines:
+    // "verbatimModuleSyntax": true,
+    // "moduleDetection": "force",
+    // "noUncheckedSideEffectImports": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+
+
+
+// npm install --save-dev ts-node
+// npm install mysql2  # Required for sequelize with PostgreSQL
+// npm install @types/pg-hstore  # For pg-hstore types
