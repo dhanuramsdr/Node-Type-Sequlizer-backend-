@@ -3,26 +3,32 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-"scripts": {
-  "dev": "nodemon --exec ts-node src/server.ts",
-  "start": "ts-node src/server.ts",
-  "build": "tsc",
-  "serve": "node dist/server.js"
-},
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "start": "ts-node src/server.ts",
+    "build": "tsc",
+     "lint": "eslint . --ext .ts",
+    "serve": "node dist/server.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.6",
     "@types/lodash": "^4.17.23",
     "@types/multer": "^2.0.0",
     "@types/node": "^25.0.3",
     "@types/streamifier": "^0.1.2",
     "@types/swagger-ui-express": "^4.1.8",
+    "eslint": "^10.0.2",
+    "globals": "^17.4.0",
+    "jiti": "^2.6.1",
     "sequelize-cli": "^6.6.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1"
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
