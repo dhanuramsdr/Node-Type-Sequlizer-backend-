@@ -6,7 +6,7 @@ dotenv.config()
 
 const app = express()
 
-// ✅ CORRECT ORDER:
+
 // 1. CORS first
 app.use(cors())
 
