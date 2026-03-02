@@ -2,8 +2,6 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { allRouter } from './router/allRouter'
-import { autoMigrateAndSeed } from './utilites/autoMigrateAndSeed'
-
 dotenv.config()
 
 const app = express()
@@ -21,8 +19,6 @@ app.use("/api/v1", allRouter)
 
 const startServer = async () => {
     try {
-        await autoMigrateAndSeed()
-
         app.listen(process.env.PORT, (err) => {
             if (err) {
                 console.log(err);

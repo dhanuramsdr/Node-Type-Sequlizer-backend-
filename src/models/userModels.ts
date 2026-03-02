@@ -10,10 +10,10 @@ interface UserAttributes {
   Password: string;
 }
 
-// Define creation attributes (Id is optional for creation)
-interface UserCreationAttributes extends Optional<UserAttributes, 'Id'> {}
+// Fix 1: Use type alias instead of empty interface
+type UserCreationAttributes = Optional<UserAttributes, 'Id'>;
 
-// Use the built-in Model type without overriding changed
+// Define User model instance type
 export type UserInstance = Model<UserAttributes, UserCreationAttributes> & UserAttributes;
 
 export const userModel = dbConnection.define<UserInstance>(
@@ -91,4 +91,5 @@ export const userModel = dbConnection.define<UserInstance>(
   }
 );
 
-export type { UserAttributes, UserCreationAttributes };
+export type { UserAttributes };
+export type { UserCreationAttributes };
