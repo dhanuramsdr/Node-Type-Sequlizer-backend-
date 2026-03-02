@@ -7,11 +7,11 @@ dotenv.config()
 const app = express()
 
 
-// 1. CORS first
+
 app.use(cors())
 
 // 2. Body parsers BEFORE routes
-app.use(express.json())  // ← THIS MUST BE BEFORE ROUTES!
+app.use(express.json())  
 app.use(express.urlencoded({ extended: true })) // ← Also add this
 
 // 3. Routes AFTER body parsers
