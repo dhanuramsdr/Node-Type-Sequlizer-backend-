@@ -10,7 +10,6 @@ const app = express()
 
 app.use(cors())
 
-// 2. Body parsers BEFORE routes
 app.use(express.json())  
 app.use(express.urlencoded({ extended: true })) 
 
