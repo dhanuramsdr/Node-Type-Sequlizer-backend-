@@ -1,17 +1,12 @@
 import { dbConnection } from '../db/dbConnection';
 import fs from 'fs';
 import path from 'path';
-import { Model, ModelStatic } from 'sequelize';
+import { Model, ModelStatic, Optional } from 'sequelize';
 
 // IMPORT YOUR MODELS HERE ⬇️
 import '../models/userModels';
 import '../models/Roles';
 import '../models/userRoles';
-
-// Define interfaces for CSV data
-interface CsvRow {
-  [key: string]: string;
-}
 
 interface CsvFile {
   fileName: string;
@@ -22,25 +17,48 @@ interface CsvMetadata {
   csvFiles: CsvFile[];
 }
 
-// Model-specific data transformers
-const transformUserData = (row: Record<string, string>): Record<string, any> => ({
+// Define specific types for each model's data
+interface UserData {
+  Name: string;
+  Email: string;
+  Password: string;
+  [key: string]: string;
+}
+
+interface RoleData {
+  name: string;
+  description: string;
+  [key: string]: string;
+}
+
+interface UserRoleData {
+  userId: string;
+  roleId: string;
+  [key: string]: string;
+}
+
+// Model-specific data transformers with proper return types
+const transformUserData = (row: Record<string, string>): UserData => ({
   Name: row.Name || row.name || '',
   Email: row.Email || row.email || '',
   Password: row.Password || row.password || ''
 });
 
-const transformRoleData = (row: Record<string, string>): Record<string, any> => ({
+const transformRoleData = (row: Record<string, string>): RoleData => ({
   name: row.name || row.Name || '',
   description: row.description || row.Description || ''
 });
 
-const transformUserRoleData = (row: Record<string, string>): Record<string, any> => ({
+const transformUserRoleData = (row: Record<string, string>): UserRoleData => ({
   userId: row.userId || row.UserId || row.user_id || '',
   roleId: row.roleId || row.RoleId || row.role_id || ''
 });
 
+// Define transformer type
+type DataTransformer = (row: Record<string, string>) => Record<string, string | number | boolean>;
+
 // Map model names to transformers
-const transformers: Record<string, (row: Record<string, string>) => Record<string, any>> = {
+const transformers: Record<string, DataTransformer> = {
   Users: transformUserData,
   Roles: transformRoleData,
   UserRoles: transformUserRoleData
@@ -183,13 +201,13 @@ async function processCSV(fileName: string, filePath: string): Promise<void> {
       
       // Transform data using the appropriate transformer if available
       const transformer = transformers[modelName];
-      let dataToInsert;
+      let dataToInsert: Record<string, any>[];
       
       if (transformer) {
-        dataToInsert = data.map(transformer);
+        dataToInsert = data.map(row => transformer(row));
         console.log(`🔄 Transformed data for ${modelName} model`);
       } else {
-        // If no transformer, use the data as is (with type assertion)
+        // If no transformer, use the data as is
         dataToInsert = data;
         console.log(`⚠️ No transformer found for ${modelName}, using raw data`);
       }
