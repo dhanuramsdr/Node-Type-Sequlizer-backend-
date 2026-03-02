@@ -4,7 +4,6 @@ import { userModel } from '../models/userModels';
 import { comparePassword } from '../utilites/passwordUtility';
 import { generateToken } from '../utilites/jwtUtility';
 import { Op } from 'sequelize';
-import { roleModel } from '../models/Roles';
 import { userRoleModel } from '../models/userRoles';
 
 export const regiseterUser=async(req:Request,res:Response):Promise<void>=>{
@@ -60,7 +59,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         }
 
         // ✅ Get the user as plain object
-        const userData = user.get({ plain: true }) as any;
+        const userData = user.get({ plain: true }) ;
         
         // ✅ Debug: log what fields are available
         console.log('User data fields:', Object.keys(userData));

@@ -1,8 +1,32 @@
 import { Request, Response } from 'express';
-import { CloudinaryUploadOptions, uploadToCloudinary } from "../utilites/cloudinary";
+import { uploadToCloudinary } from "../utilites/cloudinary";
 import { productModel } from "../models/productModels";
-import { uploadSingle } from "../utilites/multerutilit";
-import { Op, where } from 'sequelize';
+import { Op, WhereOptions, Order } from 'sequelize';
+
+// Define a more flexible type for Sequelize where conditions
+type SequelizeWhere = {
+  Productname?: {
+    [Op.like]: string;
+  };
+  createdAt?: {
+    [Op.gte]?: Date;
+    [Op.lte]?: Date;
+  };
+};
+
+interface ProductQueryOptions {
+  where: WhereOptions;
+  limit: number;
+  offset: number;
+  order: Order;
+}
+
+interface ProductUpdateBody {
+  Productname?: string;
+  Image?: string;
+  CloudinaryPublicId?: string;
+  Sellerid?: number;
+}
 
 export const createProduct = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -31,11 +55,11 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
     });
 
     // Save to database
-    const product = await productModel.create({
+    await productModel.create({
       Productname,
       Image: uploadResult.secure_url,
       CloudinaryPublicId: uploadResult.public_id,
-      Sellerid: parseInt(Sellerid)
+      Sellerid: parseInt(Sellerid, 10)
     });
 
     // Send response
@@ -44,112 +68,121 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
       message: 'Product created successfully',
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create product error:', error);
 
-    // Handle specific errors
-    if (error.message.includes('File too large')) {
-      res.status(400).json({ success: false, message: 'File too large. Max 5MB' });
-    } else if (error.message.includes('Only images')) {
-      res.status(400).json({ success: false, message: 'Only image files allowed' });
-    } else if (error.message.includes('Cloudinary')) {
-      res.status(500).json({ success: false, message: 'Image upload failed' });
+    // Handle specific errors with type checking
+    if (error instanceof Error) {
+      if (error.message.includes('File too large')) {
+        res.status(400).json({ success: false, message: 'File too large. Max 5MB' });
+      } else if (error.message.includes('Only images')) {
+        res.status(400).json({ success: false, message: 'Only image files allowed' });
+      } else if (error.message.includes('Cloudinary')) {
+        res.status(500).json({ success: false, message: 'Image upload failed' });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: 'Server error',
+          ...(process.env.NODE_ENV === 'development' && { error: error.message })
+        });
+      }
     } else {
       res.status(500).json({ 
         success: false, 
-        message: 'Server error',
-        ...(process.env.NODE_ENV === 'development' && { error: error.message })
+        message: 'Server error'
       });
     }
   }
 };
 
-export const getAllProdutsAlter=async(req:Request,res:Response)=>{
+export const getAllProdutsAlter = async (req: Request, res: Response) => {
   try {
-        const page= parseInt(req.query.page as string)|| 1;
-        const limit=parseInt(req.query.limit as string)|| 10;
-        const sort=req.query.sort as string || 'createdAt'
-        const search=req.query.search as string ||''
- const startDate = req.query.startDate as string;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+    const sort = req.query.sort as string || 'createdAt';
+    const search = req.query.search as string || '';
+    const startDate = req.query.startDate as string;
     const endDate = req.query.endDate as string;
 
+    const sortOrder = "DESC";
+    const offset = (page - 1) * limit;
+    
+    const filter: SequelizeWhere = {};
 
-        const sortOrder="DESC"
-        const offSet=(page-1)*limit;
-        
-        const filter:any={}
+    if (search) {
+      filter.Productname = {
+        [Op.like]: `%${search}%`
+      };
+    }
 
-        if(search){
-          filter.Productname={
-            [Op.like]:`%${search}%`
-          }
+    if (startDate || endDate) {
+      filter.createdAt = {};
+    }
 
-        }
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      if (filter.createdAt) {
+        filter.createdAt[Op.gte] = start;
+      }
+    }
 
-        if(startDate || endDate){
-          filter.createdAt={}
-        }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      if (filter.createdAt) {
+        filter.createdAt[Op.lte] = end;
+      }
+    }
+    
+    const queryOption: ProductQueryOptions = {
+      where: filter as WhereOptions,
+      limit: limit,
+      offset: offset,
+      order: [[sort, sortOrder]]
+    };
 
-        if(startDate){
-          const start=new Date(startDate)
-          start.setHours(0,0,0,0)
-          filter.createdAt[Op.gte]=start
-        }
+    const { count: totalCount, rows: products } = await productModel.findAndCountAll(queryOption);
 
-        if(endDate){
-         const end=new Date(endDate)
-         end.setHours(23,59,59,999)
-         filter.createdAt[Op.lte]=end 
-        }
-        
-        const queryOption:any={
-          where:filter,
-          limit:limit,
-          offSet:offSet,
-          order:[[sort,sortOrder]]
-        }
-
-        const  {count:totalCount,rows:products}=await productModel.findAndCountAll(queryOption)
-
-        if (!products || products.length === 0) {
+    if (!products || products.length === 0) {
       return res.status(404).json({
         success: false,
         message: "No products found"
       });
-          }
+    }
 
-         res.status(200).json({
-        success: true,
-        data:products,
-        totalCount:totalCount
-      });
+    res.status(200).json({
+      success: true,
+      data: products,
+      totalCount: totalCount
+    });
   } catch (error) {
-     console.error('Error fetching product:', error);
+    console.error('Error fetching product:', error);
     res.status(500).json({
       success: false,
       message: "Internal server error"
     });
   }
-}
+};
 
 export const getAllProduct = async (req: Request, res: Response) => {
   try {
     // Extract query parameters with default values
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
     const search = req.query.search as string || '';
     const startDate = req.query.startDate as string;
     const endDate = req.query.endDate as string;
     const sortBy = req.query.sortBy as string || 'createdAt';
     
-    // Set DESC as default sort order - no need to send from frontend
+    // Set DESC as default sort order
     const sortOrder = 'DESC';
 
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
     // Build where conditions
-    const whereConditions: any = {};
+    const whereConditions: SequelizeWhere = {};
 
     // Add search filter for product name
     if (search) {
@@ -165,27 +198,31 @@ export const getAllProduct = async (req: Request, res: Response) => {
       if (startDate) {
         const start = new Date(startDate);
         start.setHours(0, 0, 0, 0);
-        whereConditions.createdAt[Op.gte] = start;
+        if (whereConditions.createdAt) {
+          whereConditions.createdAt[Op.gte] = start;
+        }
       }
       
       if (endDate) {
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
-        whereConditions.createdAt[Op.lte] = end;
+        if (whereConditions.createdAt) {
+          whereConditions.createdAt[Op.lte] = end;
+        }
       }
     }
 
     // Build query option
-    const queryOptions: any = {
-      where: whereConditions,
+    const queryOptions: ProductQueryOptions = {
+      where: whereConditions as WhereOptions,
       limit: limit,
       offset: offset,
-      order: [[sortBy, sortOrder]], // Always use DESC as default
+      order: [[sortBy, sortOrder]],
     };
 
     // Get total count for pagination metadata
     const totalCount = await productModel.count({
-      where: whereConditions
+      where: whereConditions as WhereOptions
     });
 
     // Get paginated results
@@ -222,12 +259,9 @@ export const getAllProduct = async (req: Request, res: Response) => {
         startDate: startDate,
         endDate: endDate,
         sortBy: sortBy,
-        sortOrder: sortOrder // Show that DESC is used by default
+        sortOrder: sortOrder
       }
     });
-
-
-
 
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -238,27 +272,32 @@ export const getAllProduct = async (req: Request, res: Response) => {
   }
 };
 
-
-export const updatedate=async(req:Request,res:Response)=>{
-try {
-  const {id}=req.params
-  const result=await productModel.update(req.body,{where:{Id:id}})
+export const updateProduct = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updateData: ProductUpdateBody = req.body;
+    
+    const [affectedCount] = await productModel.update(updateData, { 
+      where: { Id: id } as WhereOptions
+    });
      
- if(!result){
-      res.status(400).json({
-      success: false,
-    });
-      } 
+    if (affectedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found or no changes made'
+      });
+    } 
       
-      res.status(200).json({
+    res.status(200).json({
       success: true,
-      mes:'data updated'
+      message: 'Data updated successfully'
     });
 
-} catch (error) {
-   res.status(500).json({
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({
       success: false,
       message: "Internal server error"
     });   
-}
-} 
+  }
+};

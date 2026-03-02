@@ -1,11 +1,16 @@
-// middleware/upload.ts
-import multer from 'multer';
+// middleware/upload.ts (or utilities/multerutilit.ts)
+import multer, { FileFilterCallback } from 'multer';
+import { Request } from 'express';
 
 // Memory storage for Cloudinary
 const storage = multer.memoryStorage();
 
-// File filter
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+// File filter with proper typing - FIXED: Removed 'any' type
+const fileFilter = (
+  req: Request, 
+  file: Express.Multer.File, 
+  cb: FileFilterCallback
+): void => {
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
