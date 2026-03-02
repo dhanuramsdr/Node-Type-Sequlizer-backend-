@@ -12,7 +12,7 @@ app.use(cors())
 
 // 2. Body parsers BEFORE routes
 app.use(express.json())  
-app.use(express.urlencoded({ extended: true })) // ← Also add this
+app.use(express.urlencoded({ extended: true })) 
 
 // 3. Routes AFTER body parsers
 app.use("/api/v1", allRouter)
