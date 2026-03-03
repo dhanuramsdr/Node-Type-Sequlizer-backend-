@@ -13,7 +13,7 @@ app.use(cors())
 app.use(express.json())  
 app.use(express.urlencoded({ extended: true })) 
 
-//app.use
+//app.use is used 
 app.use("/api/v1", allRouter)
 
 const startServer = async () => {
